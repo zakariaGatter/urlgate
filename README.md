@@ -9,7 +9,6 @@
 
 ## About
 
-
 [Urlgate] Extract URLS from a text file in bure bash
 
 [Urlgate] allows you to...
@@ -33,8 +32,8 @@
 1. Introduction:
 
    Installation requires :
-	* [__Curl__](https://curl.haxx.se) for get Search file from Web
-	* [__Dmenu__](https://tools.suckless.org/dmenu/) For Url select
+	* [Curl](https://curl.haxx.se) for get Search file from Web
+	* [Dmenu](https://tools.suckless.org/dmenu/) For Url select
 
 2. Set up [Urlgate]:
 
@@ -48,32 +47,29 @@
 ## Using Urlgate
 
 ```
-URLGATE
-Write by Zakaria Gatter (zakaria.gatter@gmail.com)
-
-Extract URLs from a text file in bure bash
+URLGATE Extract URLs from a text file in bure bash
 
 urlgate [OPTS]
 
 OPTS :
-	-c|--curl 	: Download website tp Extract URLs from
-	-f|--file 	: Give file to Extract URLs from
-	-g|--grep 	: Search for URLs with grep
-	-d|--dmenu 	: Use dmenu for URL select
-	-e|--exec 	: Run Command on Selected URL
+    -c|--curl     : Download website to Extract URLs from
+    -f|--file     : Give file to Extract URLs from
+    -g|--grep     : Search for URLs with grep
+    -d|--dmenu    : Use dmenu for URL select
+    -e|--exec     : Run Command on Selected URL
 
 NOTE :
-	- You can pipe out from external Commands or Programs
-		ex : cat /path/to/file | urlgate -d
+    - You can pipe out from external Commands or Programs
+        ex : cat /path/to/file | urlgate -d
 
-	- You can change dmenu options with "_DMENU_OPTS_" variable
-		ex : _DMENU_OPTS_="-p "URL SELECT :" -i -nb black -nf white" && urlgate -f /path/to/file -d
+    - You can change dmenu options with "URLGATE_DMENU" variable
+        ex : URLGATE_DMENU="-p "URL SELECT :" -i -nb black -nf white" && urlgate -f /path/to/file -d
 
-	- You can change default search REGEX options with "_URLGATE_REGEX_" variable
-		ex : _URLGATE_REGEX_="http?://[^ ]+" && urlgate -f /path/to/file
+    - You can change default search REGEX options with "URLGATE_REGEX" variable
+        ex : URLGATE_REGEX="http?://[^ ]+" && urlgate -f /path/to/file
 
-	- You can change default grep options with "_GREP_OPTS_" variable
-		ex : _GREP_OPTS_="-Ei" && urlgate -f /path/to/file -g "youtube.com
+    - You can change default grep options with "URLGATE_GREP" variable
+        ex : URLGATE_GREP="-Ei" && urlgate -f /path/to/file -g "youtube.com"
 ```
 
 ## TODO
@@ -88,4 +84,4 @@ NOTE :
 * [X] Mofidy dmenu, grep, and search options
 
 
-[Urlgate]:http://gitlab.com/zakariagatter/urlgate
+[Urlgate]:http://github.com/zakariagatter/urlgate

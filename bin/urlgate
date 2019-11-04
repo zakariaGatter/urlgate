@@ -27,36 +27,34 @@ _tmp_file_="/tmp/urlgateXX_X"
 #------------------------------------#
 # DEFAULT REGEX TO USE FROM URLVIWER #
 #------------------------------------#{{{
-_URLGATE_REGEX_="(((http|https|ftp|gopher)|mailto):(\/\/)?[^ <>\"\t]|(www|ftp)[0-9]?\\.[-a-z0-9.]+)[^ .,;\t\n\r<\">\\):]?[^, <>\"\t]*[^ .,;\t\n\r<\">\\):]"
+URLGATE_REGEX="(((http|https|ftp|gopher)|mailto):(\/\/)?[^ <>\"\t]|(www|ftp)[0-9]?\\.[-a-z0-9.]+)[^ .,;\t\n\r<\">\\):]?[^, <>\"\t]*[^ .,;\t\n\r<\">\\):]"
 #}}}
 
 #-------------------------#
 # DEFAULT OPTION FOR GREP #
 #-------------------------#{{{
-_GREP_OPTS_="${_GREP_OPTS_:--i}"
+URLGATE_GREP="${URLGATE_GREP:--w}"
 #}}}
 
 #--------------------------#
 # DEFAULT OPTION FOR DMENU #
 #--------------------------#{{{
-_DMENU_OPTS_=${_DMENU_OPTS_:--p "Urlgate: " -i -l 5}
+URLGATE_DMENU=${URLGATE_DMENU:--p "Urlgate: " -i -l 5}
 #}}}
 
 #----------------------#
 # GET HTTPS LINKS LIST #
 #----------------------#{{{
 _get_links_(){
-if [ -n "$_target_" ]; then
-	# grep link from file
-	grep -Po "$_URLGATE_REGEX_" "$_target_" > "$_tmp_file_" 2> /dev/null
+if [ "$_target_" ]; then
+    # grep link from file
+    \grep -Po "$URLGATE_REGEX" "$_target_" > "$_tmp_file_" 2> /dev/null
 
-	# if no dmenu or grep option giving print result
-	test -z "$_GREP_" && {
-		test -z "$_DMENU_" && \cat "$_tmp_file_"
-	}
+    # if no dmenu or grep option giving print result
+    [ "$GREP" ] || { [ "$DMENU" ] || \cat "$_tmp_file_" ;}
 else
-	echo >&2 "${_name_^^} : No Input Giving"
-	exit 1
+    echo >&2 "${_name_^^}: No Input Giving"
+    exit 1
 fi
 }
 #}}}
@@ -67,12 +65,12 @@ fi
 _curl_(){
 _tmp_curl_="/tmp/urlgateXX_curl"
 
-test -n "$__CURL" && {
-	curl "$_CURL_" -o "$_tmp_curl_"
-	_target_="$_tmp_curl_"
+[ "$_CURL_" ] && {
+    \curl "$CURL" -o "$_tmp_curl_"
+    _target_="$_tmp_curl_"
 } || {
-	echo >&2 "${_name_^^} : No URL Giving"
-	exit 1
+    echo >&2 "${_name_^^}: No URL Giving"
+    exit 1
 }
 }
 #}}}
@@ -81,24 +79,21 @@ test -n "$__CURL" && {
 # GREP SPACIAL LINK #
 #-------------------#{{{
 _grep_(){
+[ "$_GREP_" ] && {
+    # create tmp file for grep
+    local _tmp_grep_="/tmp/urlgateXX_grep"
 
-test -n "$__GREP" && {
-	# create tmp file for grep
-	local _tmp_grep_="/tmp/urlgateXX_grep"
+    # grepping the new links
+    \grep "$URLGATE_GREP" "$_GREP_" "$_tmp_file_" > "$_tmp_grep_"
 
-	# grepping the new links
-	\grep "$_GREP_OPTS_" "$__GREP" "$_tmp_file_" > "$_tmp_grep_"
+    # rename the main VARIABLE
+    _tmp_file_="$_tmp_grep_"
 
-	# rename the main VARIABLE
-	_tmp_file_="$_tmp_grep_"
-
-	# if no dmenu option giving print result
-	test -z "$_DMENU_" && {
-		\cat "$_tmp_file_"
-	}
+    # if no dmenu option giving print result
+    [ "$DMENU" ] || \cat "$_tmp_file_"
 } || {
-	echo >&2 "${_name_^^} : No Grep Search String Giving"
-	exit 1
+    echo >&2 "${_name_^^}: No Grep Search String Giving"
+    exit 1
 }
 }
 #}}}
@@ -107,10 +102,10 @@ test -n "$__GREP" && {
 # DMENU SELECT #
 #--------------#{{{
 _dmenu_(){
-	read -r _resoult_ < <(\cat $_tmp_file_ | dmenu $_DMENU_OPTS_ )
+    read -r _resoult_ < <(\cat $_tmp_file_ | dmenu "$URLGATE_DMENU" )
 
-	# if no EXEC option giving print result
-	test -z "$_EXEC_" && echo $_resoult_
+    # if no EXEC option giving print result
+    [ "$EXEC" ] || echo $_resoult_
 }
 #}}}
 
@@ -118,19 +113,16 @@ _dmenu_(){
 # EXEC COMMAND #
 #--------------#{{{
 _exec_(){
-# check if you Exec only with dmenu
-test -z "$_DMENU_" && {
-	echo >&2 "${_name_^^} : Not Allow Exec Command Without Dmenu Option"
-	exit 1
-}
+# check if you Exec only with dme
+[ "$DMENU" ] || { echo >&2 "${_name_^^}: Not Allow Exec Command Without Dmenu Option" && exit 1 ;}
 
-test -n "$__EXEC" && {
-	__EXEC=$(echo $__EXEC | sed "s,%u,\"$_resoult_\",")
-	eval "$__EXEC"
+[ "$_EXEC_" ] && {
+    _EXEC_=$(echo $_EXEC_ | sed "s,%u,$_resoult_,")
+    eval "$_EXEC_"
 } || {
-	echo -e "$_resoult_"
-	echo >&2 "${_name_^^} : No Exec Command Giving"
-	exit 1
+    echo -e "$_resoult_"
+    echo >&2 "${_name_^^} : No Exec Command Giving"
+    exit 1
 }
 }
 #}}}
@@ -139,35 +131,32 @@ test -n "$__EXEC" && {
 # HELP DIALOG #
 #-------------#{{{
 _help_(){
-echo -e "
-${_name_^^}
-Write by Zakaria Gatter (zakaria.gatter@gmail.com)
-
-Extract URLs from a text file in bure bash
+cat <<- HELP
+${_name_^^} Extract URLs from a text file in bure bash
 
 ${_name_} [OPTS]
 
 OPTS :
-	-c|--curl 	: Download website tp Extract URLs from
-	-f|--file 	: Give file to Extract URLs from
-	-g|--grep 	: Search for URLs with grep
-	-d|--dmenu 	: Use dmenu for URL select
-	-e|--exec 	: Run Command on Selected URL
+    -c|--curl     : Download website to Extract URLs from
+    -f|--file     : Give file to Extract URLs from
+    -g|--grep     : Search for URLs with grep
+    -d|--dmenu    : Use dmenu for URL select
+    -e|--exec     : Run Command on Selected URL
 
 NOTE :
-	- You can pipe out from external Commands or Programs
-		ex : cat /path/to/file | urlgate -d
+    - You can pipe out from external Commands or Programs
+        ex : cat /path/to/file | $_name_ -d
 
-	- You can change dmenu options with \"_DMENU_OPTS_\" variable
-		ex : _DMENU_OPTS_=\"-p \"URL SELECT :\" -i -nb black -nf white\" && $_name_ -f /path/to/file -d
+    - You can change dmenu options with "URLGATE_DMENU" variable
+        ex : URLGATE_DMENU="-p "URL SELECT :" -i -nb black -nf white" && $_name_ -f /path/to/file -d
 
-	- You can change default search REGEX options with \"_URLGATE_REGEX_\" variable
-		ex : _URLGATE_REGEX_=\"http?://[^ ]+\" && $_name_ -f /path/to/file
+    - You can change default search REGEX options with "URLGATE_REGEX" variable
+        ex : URLGATE_REGEX="http?://[^ ]+" && $_name_ -f /path/to/file
 
-	- You can change default grep options with \"_GREP_OPTS_\" variable
-		ex : _GREP_OPTS_=\"-Ei\" && $_name_ -f /path/to/file -g \"youtube.com\"
+    - You can change default grep options with "URLGATE_GREP" variable
+        ex : URLGATE_GREP="-Ei" && $_name_ -f /path/to/file -g "youtube.com"
 
-"
+HELP
 }
 #}}}
 
@@ -177,43 +166,39 @@ NOTE :
 _main_(){
 # if /dev/stdin is empty dont take it
 if [ -p /dev/stdin ];then
-	_PIPE_="pipe"
-	_target_="/dev/stdin"
+    _PIPE_=true
+    _target_="/dev/stdin"
 fi
 
 # looking for options
 while [ "$1" ]; do
-	case "$1" in
-		-c|--curl )
-			shift
-			_CURL_="curl"
-			__CURL="$1"
-			;;
-		-f|--file )
-			shift
-			_FILE_="file"
-			[ -f "$1" ] && _target_="$1"
-			;;
-		-g|--grep )
-			shift
-			_GREP_="grep"
-			__GREP="$1"
-			;;
-		-d|--dmenu )
-			_DMENU_="dmenu"
-			;;
-		-e|--exec )
-			shift
-			_EXEC_="exec"
-			__EXEC="$1"
-			;;
-		* )
-			_help_
-			exit 0
-			;;
-	esac
+    case "$1" in
+        -c|--curl )
+            shift
+            CURL=true _CURL_="$1"
+            ;;
+        -f|--file )
+            shift
+            FILE=true
+            [ -f "$1" ] && _target_="$1"
+            ;;
+        -g|--grep )
+            shift
+            GREP=true _GREP_="$1"
+            ;;
+        -d|--dmenu )
+            DMENU=true
+            ;;
+        -e|--exec )
+            shift
+            EXEC=true _EXEC_="$1"
+            ;;
+        * )
+            _help_ && exit 0
+            ;;
+    esac
 
-	shift
+    shift
 done
 }
 #}}}
@@ -228,29 +213,21 @@ _main_ "$@"
 # START PROGRESSING FILE #
 #------------------------#{{{
 # check if u use more then one input method pipe file curl
-if [ -n "$_PIPE_" -a -n "$_FILE_" ]; then
-	echo >&2 "${_name_^^} : Not Allow For 2 Input Methods"
-	exit 1
-elif [ -n "$_PIPE_" -a -n "$_CURL_" ]; then
-	echo >&2 "${_name_^^} : Not Allow For 2 Input Methods"
-	exit 1
-elif [ -n "$_FILE_" -a -n "$_CURL_" ]; then
-	echo >&2 "${_name_^^} : Not Allow For 2 Input Methods"
-	exit 1
+if [ -n "$_PIPE_" -a -n "$FILE" ]; then
+    echo >&2 "${_name_^^} : Not Allow For 2 Input Methods"
+    exit 1
+elif [ -n "$_PIPE_" -a -n "$CURL" ]; then
+    echo >&2 "${_name_^^} : Not Allow For 2 Input Methods"
+    exit 1
+elif [ -n "$FILE" -a -n "$CURL" ]; then
+    echo >&2 "${_name_^^} : Not Allow For 2 Input Methods"
+    exit 1
 fi
 
-# run -c option
-test -n "$_CURL_" && _curl_
-
-# get link list
+[ "$CURL" ] && _curl_
 _get_links_
-
-# run -g option
-test -n "$_GREP_" && _grep_
-# run -d option
-test -n "$_DMENU_" && _dmenu_
-# run -e option
-test -n "$_EXEC_" && _exec_
-
+[ "$GREP" ] && _grep_
+[ "$DMENU" ] && _dmenu_
+[ "$EXEC" ] && _exec_
 #}}}
 
