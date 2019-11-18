@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+
+#-------#
+# DEBUG #
+#-------#{{{
+#set -vx
+#}}}
+
+#---------------#
+# SHELL OPTIONS #
+#---------------#{{{
+shopt -s lastpipe
+#}}}
+
+#--------------#
+# SCRIPT NAME  #
+#--------------#{{{
+_name_=${0##*/}
+#}}}
+
+#----------------#
+# MAKE TMP FILES #
+#----------------#{{{
+_tmp_file_="/tmp/urlgate.XXX"
+#}}}
+
+#-----------#
+# ERROR MSG #
+#-----------#{{{
+_er_(){ echo -e "${_name_^}: $@" >&2 ; exit 1}
+#}}}
+
+#------------------------------------#
+# DEFAULT REGEX TO USE FROM URLVIWER #
+#------------------------------------#{{{
+URLGATE_REGEX="(((http|https|ftp|gopher)|mailto):(\/\/)?[^ <>\"\t]|(www|ftp)[0-9]?\\.[-a-z0-9.]+)[^ .,;\t\n\r<\">\\):]?[^, <>\"\t]*[^ .,;\t\n\r<\">\\):]"
+#}}}
+
+#-------------------------#
+# DEFAULT OPTION FOR GREP #
+#-------------------------#{{{
+URLGATE_GREP="${URLGATE_GREP:--w}"
+#}}}
+
+#--------------------------#
+# DEFAULT OPTION FOR DMENU #
+#--------------------------#{{{
+URLGATE_DMENU=${URLGATE_DMENU:--p "Urlgate: " -i -l 5}
+#}}}
+
+#----------------------#
+# GET HTTPS LINKS LIST #
+#----------------------#{{{
+_get_links_(){
+[ "$_target_" ] && {
+    # grep link from file
+    (grep -Po "$URLGATE_REGEX" "$_target_" 2> /dev/null) > "$_tmp_file_"
+
+    # if no dmenu or grep option giving print result
+    [ "$GREP" ] || [ "$DMENU" ] || cat "$_tmp_file_"
+} || {
+    _er_ "No Input Giving"
+}
+}
+#}}}
+
+#------------------------#
+# CURL DOWNLOAD WEN PAGE #
+#------------------------#{{{
+_curl_(){
+_tmp_curl_="/tmp/urlgateXX_curl"
+
+[ "$_CURL_" ] && {
+    curl "$CURL" -o "$_tmp_curl_"
+    _target_="$_tmp_curl_"
+} || {
+    _er_ "No URL Giving"
+}
+}
+#}}}
+
+#-------------------#
+# GREP SPACIAL LINK #
+#-------------------#{{{
+_grep_(){
+[ "$_GREP_" ] && {
+    # create tmp file for grep
+    local _tmp_grep_="/tmp/urlgateXX_grep"
+
+    # grepping the new links
+    grep "$URLGATE_GREP" "$_GREP_" "$_tmp_file_" > "$_tmp_grep_"
+
+    # rename the main VARIABLE
+    _tmp_file_="$_tmp_grep_"
+
+    # if no dmenu option giving print result
+    [ "$DMENU" ] || cat "$_tmp_file_"
+} || {
+    _er_ "No Grep Search String Giving"
+}
+}
+#}}}
+
+#--------------#
+# DMENU SELECT #
+#--------------#{{{
+_dmenu_(){
+    read -r _resoult_ < <(cat $_tmp_file_ | dmenu "$URLGATE_DMENU" )
+
+    # if no EXEC option giving print result
+    [ "$EXEC" ] || echo $_resoult_
+}
+#}}}
+
+#--------------#
+# EXEC COMMAND #
+#--------------#{{{
+_exec_(){
+# check if you Exec only with dme
+[ "$DMENU" ] || _er_ "Not Allow Exec Command Without Dmenu Option"
+
+[ "$_EXEC_" ] && {
+    _EXEC_=$(echo $_EXEC_ | sed "s,%u,$_resoult_,")
+    eval "$_EXEC_"
+} || {
+    echo -e "$_resoult_"
+    _er_ "No Exec Command Giving"
+}
+}
+#}}}
+
+#-------------#
+# HELP DIALOG #
+#-------------#{{{
+_help_(){
+cat <<- HELP
+${_name_^^} Extract URLs from a text file in bure bash
+Usage: ${_name_} [OPTIONS] ... file ...
+   Or: CMD | ${_name_} [OPTIONS]
+
+OPTIONS
+ -c  : Download website to Extract URLs from
+ -f  : Give file to Extract URLs from
+ -g  : Search for URLs with grep
+ -d  : Use dmenu for URL select
+ -e  : Run Command on Selected URL "%u: Selected url"
+
+VARIABLES
+ URLGATE_REGEX
+ URLGATE_GREP
+ URLGATE_DMENU
+HELP
+}
+#}}}
+
+#---------------#
+# MAIN FUNCTION #
+#---------------#{{{
+_main_(){
+
+# looking for options
+while [ "$1" ]; do
+    case "$1" in
+        -c|--curl )
+            shift
+            CURL=true _CURL_="$1"
+            ((_ERROR_++))
+            ;;
+        -f|--file )
+            shift
+            FILE=true
+            [ -f "$1" ] && _target_="$1"
+            ((_ERROR_++))
+            ;;
+        -g|--grep )
+            shift
+            GREP=true _GREP_="$1"
+            ;;
+        -d|--dmenu )
+            DMENU=true
+            ;;
+        -e|--exec )
+            shift
+            EXEC=true _EXEC_="$1"
+            ;;
+        * )
+            _help_ && exit 0
+            ;;
+    esac
+
+    shift
+done
+}
+#}}}
+
+#--------------------#
+# EXEC MAIN FUNCTION #
+#--------------------#{{{
+# if /dev/stdin is empty dont take it
+[ -p /dev/stdin ] && { _target_="/dev/stdin" && ((_ERROR_++)) ;}
+_main_ "$@"
+#}}}
+
+#------------------------#
+# START PROGRESSING FILE #
+#------------------------#{{{
+# check if u use more then one input method pipe file curl
+[ "$_ERROR_" -gt 1 ] && _er_ "Not Allow For 2 Input Methods"
+
+[ "$CURL" ]     && _curl_
+_get_links_
+[ "$GREP" ]     && _grep_
+[ "$DMENU" ]    && _dmenu_
+[ "$EXEC" ]     && _exec_
+#}}}
+
