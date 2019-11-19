@@ -212,7 +212,7 @@ URLGATE_TMP="/tmp/${_name_}.XXX"
 #----------------------#
 (( TASK > 1 ))  && _error_ "no multi tasks request allowed (-f,-c or pipeline)\nTry '${_name_} -h' for more information."
 (( SHOW > 1 ))  && _error_ "no multi list request allowed (-l or -s)\nTry '${_name_} -h' for more information."
-[ -z "$_FILE_" -a -z "$_CURL_" ] && _error_ "missing file operand\nTry '${_name_} -h' for more information"
+[ -z "$_FILE_" -a -z "$_CURL_" -a -z "$_HELP_" ] && _error_ "missing file operand\nTry '${_name_} -h' for more information"
 [ "$_HELP_" ]   && _help_   || true
 [ "$_FILE_" ]   && _urls_   || true
 [ "$_CURL_" ]   && _curl_   || true
