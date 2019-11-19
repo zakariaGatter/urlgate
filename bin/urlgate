@@ -30,7 +30,7 @@ _urls_(){
 (grep -Po "$URLGATE_REGEX" "$_FILE_" 2> /dev/null) > "$URLGATE_TMP"
 
 [ "$(< $URLGATE_TMP)" ] && {
-    [ "$_SELECT_" ] || [ "$_GREP_" ] || [ "$_LIST_"] || cat "$URLGATE_TMP"
+    [ "$_SELECT_" -o "$_GREP_" -o "$_LIST_" ] || cat "$URLGATE_TMP"
 } || _error_ "$_FILE_: No URLs found."
 }
 
@@ -45,7 +45,7 @@ read -r CURL_PAGE < <(curl "$URLGATE_CURL_FLG" "$_CURL_" 2> /dev/null)
 (echo -e "$CURL_PAGE" | grep -Po "$URLGATE_REGEX" 2> /dev/null) > "$URLGATE_TMP"
 
 [ "$(< $URLGATE_TMP)" ] && {
-    [ "$_SELECT_" ] || [ "$_GREP_" ] || [ "$_LIST_" ] || cat "$URLGATE_TMP"
+    [ "$_SELECT_" -o "$_GREP_" -o "$_LIST_" ] || cat "$URLGATE_TMP"
 } || _error_ "$_CURL_: No URLs found."
 }
 
@@ -54,8 +54,10 @@ read -r CURL_PAGE < <(curl "$URLGATE_CURL_FLG" "$_CURL_" 2> /dev/null)
 #---------------#
 _list_(){
 local line
+local count=0
 while read -r line ; do
-    echo -e "- $line"
+    ((count++))
+    printf "(%3d) - %s\n" "$count" "$line"
 done < $URLGATE_TMP
 }
 
@@ -69,7 +71,7 @@ read -r GREP_RESULT < <(grep "$URLGATE_GREP_FLG" "$_GREP_" "$URLGATE_TMP")
 
 [ "$GREP_RESULT" ] && {
     echo -e "$GREP_RESULT" > "$URLGATE_TMP"
-    [ "$_SELECT_" ] || [ "$_LIST_" ] || cat "$URLGATE_TMP"
+    [ "$_SELECT_" -o "$_LIST_" ] || cat "$URLGATE_TMP"
 } || _error_ "$_GREP_: No URLs found."
 }
 
@@ -91,7 +93,7 @@ read -r SELECTED_ITEM < <(cat "$URLGATE_TMP" | "$URLGATE_DMENU_CMD" "$URLGATE_DM
 #---------------------#
 _exec_(){
 local URL=$(cat "$URLGATE_TMP")
-local EXEC_CMD=$(echo -e "$URLGATE_EXEC" | sed "s;%u;$URL;")
+local EXEC_CMD=$(echo -e "$URLGATE_EXEC" | sed "s;%u;$URL;" 2> /dev/null)
 
 eval "$EXEC_CMD"
 }
@@ -210,8 +212,10 @@ URLGATE_TMP="/tmp/${_name_}.XXX"
 #----------------------#
 (( TASK > 1 ))  && _error_ "no multi tasks request allowed (-f,-c or pipeline)\nTry '${_name_} -h' for more information."
 (( SHOW > 1 ))  && _error_ "no multi list request allowed (-l or -s)\nTry '${_name_} -h' for more information."
-[ "$_FILE_" ]   && true     || _error_ "missing file operand\nTry '${_name_} -h' for more information"
+[ -z "$_FILE_" -a -z "$_CURL_" ] && _error_ "missing file operand\nTry '${_name_} -h' for more information"
 [ "$_HELP_" ]   && _help_   || true
+[ "$_FILE_" ]   && _urls_   || true
+[ "$_CURL_" ]   && _curl_   || true
 [ "$_GREP_" ]   && _grep_   || true
 [ "$_LIST_" ]   && _list_   || true
 [ "$_SELECT_" ] && _select_ || true
