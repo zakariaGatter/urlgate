@@ -6,11 +6,6 @@
 #set -vx
 #}}}
 
-#--------------------#
-# ENABLE BASH OPTION #
-#--------------------#
-#shopt -s lastpipe
-
 #-------------#
 # SCRIPT NAME #
 #-------------#
@@ -114,7 +109,7 @@ OPTIONS
  -l        : List All Extracted URLs
  -g <text> : Use only URLs that match TEXT
  -G <flgs> : Pass arguments to grep
- -s        : Show Selection Menu
+ -s        : Dmenu Selection menu
  -d <file> : Dmenu command to use
  -D <flgs> : Pass arguments to dmenu
  -e <file> : Exec command or script to use [%u = URL]
@@ -141,10 +136,12 @@ while getopts ":f:c:C:lg:G:sd:D:e:r:h" OPT ; do
         f )
             _FILE_="$OPTARG"
             ((TASK++))
+            ((EMPTY++))
             ;;
         c )
             _CURL_="$OPTARG"
             ((TASK++))
+            ((EMPTY++))
             ;;
         C )
             URLGATE_CURL_FLG="$OPTARG"
@@ -178,6 +175,7 @@ while getopts ":f:c:C:lg:G:sd:D:e:r:h" OPT ; do
             ;;
         h )
             _HELP_=true
+            ((EMPTY++))
             ;;
         : )
             _error_ "option requires an argument -- '${OPTARG}'\nTry '${_name_} -h' for more information."
@@ -193,7 +191,7 @@ done
 # RUN MAIN FUNCTION #
 #-------------------#
 # get pipe text
-[ -p /dev/stdin ] && { _FILE_="/dev/stdin" && ((TASKS++)) ;}
+[ -p /dev/stdin ] && { _FILE_="/dev/stdin" && ((TASKS++)) && ((EMPTY++)) ;}
 _main_ "$@"
 
 #------------------#
@@ -212,7 +210,8 @@ URLGATE_TMP="/tmp/${_name_}.XXX"
 #----------------------#
 (( TASK > 1 ))  && _error_ "no multi tasks request allowed (-f,-c or pipeline)\nTry '${_name_} -h' for more information."
 (( SHOW > 1 ))  && _error_ "no multi list request allowed (-l or -s)\nTry '${_name_} -h' for more information."
-[ -z "$_FILE_" -a -z "$_CURL_" -a -z "$_HELP_" ] && _error_ "missing file operand\nTry '${_name_} -h' for more information"
+(( EMPTY > 0 )) || _error_ "missing file operand\nTry '${_name_} -h' for more information"
+echo $EMPTY
 [ "$_HELP_" ]   && _help_   || true
 [ "$_FILE_" ]   && _urls_   || true
 [ "$_CURL_" ]   && _curl_   || true
