@@ -14,7 +14,7 @@
 [Urlgate] allows you to...
 
 * Get lis of URLS
-* Read from pipe
+* Read from pipeline
 * Grep to special URLS
 * Curl text file from the web
 * Use dmenu for Selection
@@ -32,8 +32,9 @@
 1. Introduction:
 
    Installation requires :
-	* [Curl](https://curl.haxx.se) for get Search file from Web
-	* [Dmenu](https://tools.suckless.org/dmenu/) For Url select
+	* [Curl](https://curl.haxx.se)
+	* [Dmenu](https://tools.suckless.org/dmenu/)
+    * [Coreutils]()
 
 2. Set up [Urlgate]:
 
@@ -47,29 +48,31 @@
 ## Using Urlgate
 
 ```
-URLGATE Extract URLs from a text file in bure bash
+URLGATE Extract URLs from a text file
+Usage: urlgate [OPTIONS] ... [FILE] ...
+   Or: [CMD] | urlgate [OPTIONS]
 
-urlgate [OPTS]
+OPTIONS
+ -f <file> : Extract URLs from file
+ -c <url>  : Extract URLs from the web
+ -C <flgs> : Pass arguments to curl
+ -l        : List All Extracted URLs
+ -g <text> : Use only URLs that match TEXT
+ -G <flgs> : Pass arguments to grep
+ -s        : Show Selection Menu
+ -d <file> : Dmenu command to use
+ -D <flgs> : Pass arguments to dmenu
+ -e <file> : Exec command or script to use [%u = URL]
+ -r <regx> : REGEX regular expressions to use
+ -h        : Display this help text and exit
 
-OPTS :
-    -c|--curl     : Download website to Extract URLs from
-    -f|--file     : Give file to Extract URLs from
-    -g|--grep     : Search for URLs with grep
-    -d|--dmenu    : Use dmenu for URL select
-    -e|--exec     : Run Command on Selected URL
-
-NOTE :
-    - You can pipe out from external Commands or Programs
-        ex : cat /path/to/file | urlgate -d
-
-    - You can change dmenu options with "URLGATE_DMENU" variable
-        ex : URLGATE_DMENU="-p "URL SELECT :" -i -nb black -nf white" && urlgate -f /path/to/file -d
-
-    - You can change default search REGEX options with "URLGATE_REGEX" variable
-        ex : URLGATE_REGEX="http?://[^ ]+" && urlgate -f /path/to/file
-
-    - You can change default grep options with "URLGATE_GREP" variable
-        ex : URLGATE_GREP="-Ei" && urlgate -f /path/to/file -g "youtube.com"
+VARIABLES
+ URLGATE_GREP_FLG   Pass arguments to grep
+ URLGATE_DMENU_CMD  Dmenu command to use
+ URLGATE_DMENU_FLG  Pass arguments to dmenu
+ URLGATE_CURL_FLG   Pass arguments to curl
+ URLGATE_EXEC       Exec command or script to use
+ URLGATE_REGEX      REGEX regular expressions to use
 ```
 
 ## TODO

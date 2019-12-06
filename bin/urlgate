@@ -6,11 +6,6 @@
 #set -vx
 #}}}
 
-#--------------------#
-# ENABLE BASH OPTION #
-#--------------------#
-#shopt -s lastpipe
-
 #-------------#
 # SCRIPT NAME #
 #-------------#
@@ -45,7 +40,11 @@ read -r CURL_PAGE < <(curl ${URLGATE_CURL_FLG} "$_CURL_" 2> /dev/null)
 (echo -e "$CURL_PAGE" | grep -Po "$URLGATE_REGEX" 2> /dev/null) > "$URLGATE_TMP"
 
 [ "$(< $URLGATE_TMP)" ] && {
+<<<<<<< HEAD
     [ "$_SELECT_" -o "$_GREP_" -o "$_LIST_" -o "$_EXEC_" ] || cat "$URLGATE_TMP"
+=======
+    [ "$_SELECT_" -o "$_GREP_" -o "$_LIST_" ] || cat "$URLGATE_TMP"
+>>>>>>> d7543a43e2e41bb7db007a8c32dcff67a85a2632
 } || _error_ "$_CURL_: No URLs found."
 }
 
@@ -55,10 +54,16 @@ read -r CURL_PAGE < <(curl ${URLGATE_CURL_FLG} "$_CURL_" 2> /dev/null)
 _list_(){
 local line
 local count=0
+<<<<<<< HEAD
 
 while read -r line ; do
     ((count++))
     printf "%0.3d - %s\n" "$count" "$line"
+=======
+while read -r line ; do
+    ((count++))
+    printf "(%3d) - %s\n" "$count" "$line"
+>>>>>>> d7543a43e2e41bb7db007a8c32dcff67a85a2632
 done < $URLGATE_TMP
 
 }
@@ -73,7 +78,11 @@ GREP_RESULT=$(grep ${URLGATE_GREP_FLG} "$_GREP_" "$URLGATE_TMP")
 
 [ "$GREP_RESULT" ] && {
     echo -e "$GREP_RESULT" > "$URLGATE_TMP"
+<<<<<<< HEAD
     [ "$_SELECT_" -o "$_LIST_" -o "$_EXEC_" ] || cat "$URLGATE_TMP"
+=======
+    [ "$_SELECT_" -o "$_LIST_" ] || cat "$URLGATE_TMP"
+>>>>>>> d7543a43e2e41bb7db007a8c32dcff67a85a2632
 } || _error_ "$_GREP_: No URLs found."
 }
 
@@ -95,7 +104,11 @@ read -r SELECTED_ITEM < <(cat "$URLGATE_TMP" | ${URLGATE_DMENU_CMD} ${URLGATE_DM
 #---------------------#
 _exec_(){
 local URL=$(cat "$URLGATE_TMP")
+<<<<<<< HEAD
 local EXEC_CMD=$(echo -e "$URLGATE_EXEC" | sed "s;\%u;$URL;" 2> /dev/null)
+=======
+local EXEC_CMD=$(echo -e "$URLGATE_EXEC" | sed "s;%u;$URL;" 2> /dev/null)
+>>>>>>> d7543a43e2e41bb7db007a8c32dcff67a85a2632
 
 [ "$_SELECT_" ] && eval "$EXEC_CMD" || _error_ "EXEC: -s option not selected"
 }
@@ -116,7 +129,7 @@ OPTIONS
  -l        : List All Extracted URLs
  -g <text> : Use only URLs that match TEXT
  -G <flgs> : Pass arguments to grep
- -s        : Show Selection Menu
+ -s        : Dmenu Selection menu
  -d <file> : Dmenu command to use
  -D <flgs> : Pass arguments to dmenu
  -e <file> : Exec command or script to use [%u = URL]
@@ -143,10 +156,12 @@ while getopts ":f:c:C:lg:G:sd:D:e:r:h" OPT ; do
         f )
             _FILE_="$OPTARG"
             ((TASK++))
+            ((EMPTY++))
             ;;
         c )
             _CURL_="$OPTARG"
             ((TASK++))
+            ((EMPTY++))
             ;;
         C )
             URLGATE_CURL_FLG="$OPTARG"
@@ -180,6 +195,7 @@ while getopts ":f:c:C:lg:G:sd:D:e:r:h" OPT ; do
             ;;
         h )
             _HELP_=true
+            ((EMPTY++))
             ;;
         : )
             _error_ "option requires an argument -- '${OPTARG}'\nTry '${_name_} -h' for more information."
@@ -195,7 +211,7 @@ done
 # RUN MAIN FUNCTION #
 #-------------------#
 # get pipe text
-[ -p /dev/stdin ] && { _FILE_="/dev/stdin" && ((TASKS++)) ;}
+[ -p /dev/stdin ] && { _FILE_="/dev/stdin" && ((TASKS++)) && ((EMPTY++)) ;}
 _main_ "$@"
 
 #------------------#
@@ -214,8 +230,14 @@ URLGATE_TMP="/tmp/${_name_}.XXX"
 #----------------------#
 (( TASK > 1 ))  && _error_ "no multi tasks request allowed (-f,-c or pipeline)\nTry '${_name_} -h' for more information."
 (( SHOW > 1 ))  && _error_ "no multi list request allowed (-l or -s)\nTry '${_name_} -h' for more information."
+<<<<<<< HEAD
 [ "$_HELP_" ]   && _help_   || true
 [ "$_FILE_" -a "$_CURL_" ]  && _error_ "missing file operand\nTry '${_name_} -h' for more information"
+=======
+(( EMPTY > 0 )) || _error_ "missing file operand\nTry '${_name_} -h' for more information"
+echo $EMPTY
+[ "$_HELP_" ]   && _help_   || true
+>>>>>>> d7543a43e2e41bb7db007a8c32dcff67a85a2632
 [ "$_FILE_" ]   && _urls_   || true
 [ "$_CURL_" ]   && _curl_   || true
 [ "$_GREP_" ]   && _grep_   || true
