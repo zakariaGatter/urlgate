@@ -138,14 +138,12 @@ while getopts ":f:c:lg:se:r:h" OPT ; do
             ((TASK++))
             ((EMPTY++))
             ;;
-            ;;
         l )
             _LIST_=true
             ((SHOW++))
             ;;
         g )
             _GREP_="$OPTARG"
-            ;;
             ;;
         s )
             _SELECT_=true
