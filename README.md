@@ -25,8 +25,6 @@
 * Check if the file exist
 * Check all possible user mistakes
 
-[Urlgate] is undergoing an interface change, please stay up to date to get latest changes.
-
 ## Quick Start
 
 1. Introduction:
@@ -34,7 +32,7 @@
    Installation requires :
 	* [Curl](https://curl.haxx.se)
 	* [Dmenu](https://tools.suckless.org/dmenu/)
-    * [Coreutils]()
+    * [Coreutils](https://www.gnu.org/software/coreutils)
 
 2. Set up [Urlgate]:
 
@@ -50,29 +48,27 @@
 ```
 URLGATE Extract URLs from a text file
 Usage: urlgate [OPTIONS] ... [FILE] ...
-   Or: [CMD] | urlgate [OPTIONS]
+    Or: [CMD] | urlgate [OPTIONS]
 
 OPTIONS
- -f <file> : Extract URLs from file
- -c <url>  : Extract URLs from the web
- -C <flgs> : Pass arguments to curl
- -l        : List All Extracted URLs
- -g <text> : Use only URLs that match TEXT
- -G <flgs> : Pass arguments to grep
- -s        : Show Selection Menu
- -d <file> : Dmenu command to use
- -D <flgs> : Pass arguments to dmenu
- -e <file> : Exec command or script to use [%u = URL]
- -r <regx> : REGEX regular expressions to use
- -h        : Display this help text and exit
+    -f <file> : Extract URLs from file
+    -c <url>  : Extract URLs from the web
+    -l        : List All Extracted URLs
+    -g <text> : Use only URLs that match TEXT
+    -s        : Dmenu Selection menu
+    -e <file> : Exec command or script to use [%u = URL]
+    -r <regx> : REGEX regular expressions to use
+    -h        : Display this help text and exit
 
 VARIABLES
- URLGATE_GREP_FLG   Pass arguments to grep
- URLGATE_DMENU_CMD  Dmenu command to use
- URLGATE_DMENU_FLG  Pass arguments to dmenu
- URLGATE_CURL_FLG   Pass arguments to curl
- URLGATE_EXEC       Exec command or script to use
- URLGATE_REGEX      REGEX regular expressions to use
+    URLGATE_GREP_CMD   Command to grep with.           Default [grep]
+    URLGATE_DMENU_CMD  Dmenu command to use.           Default [dmenu -p Urlgate -l 10 -i]
+    URLGATE_CURL_CMD   Command to curl Web page.       Default [curl -s]
+    URLGATE_EXEC_CMD   Exec command or script to use.  Default [xdg-open %u] "(%u) Replaced by the link"
+    URLGATE_REGEX      REGEX regular expressions to use
+
+NOTE
+    Export URLGATE Variables before you use them
 ```
 
 ## TODO
