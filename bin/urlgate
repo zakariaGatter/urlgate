@@ -1,174 +1,158 @@
 #!/usr/bin/env bash
 
-#-------#
-# DEBUG #
-#-------#{{{
-#set -vx
-#}}}
-
 #-------------#
 # SCRIPT NAME #
 #-------------#
-_name_=${0##*/}
+name=${0##*/}
 
 #-----------#
 # ERROR MSG #
 #-----------#
-die(){ printf "%s: %b \n" "${_name_^}" "$@" >&2 ; exit 1 ;}
+die(){ printf "%s: %b\n" "${name^}" "$@" >&2 ; exit 2 ;}
 
-#--------------------#
-# GIT URLS FROM FILE #
-#--------------------#
-_urls_(){
-[ -e "$_FILE_" ] || die "$_FILE_: No such file or directory\nNo URLs found."
+#--------------#
+# GET ALL URLS #
+#--------------#
+urls(){
+    while read -r line ; do
+        URLS+=( "$line" )
+    done< <(grep -Po "$URLGATE_REGEX" "$1" 2> /dev/null)
+}
 
-(grep -Po "$URLGATE_REGEX" "$_FILE_" 2> /dev/null) > "$URLGATE_TMP"
+#-------------------#
+# GET URL FROM FILE #
+#-------------------#
+file(){
+    [ -f "$FILE" ] && urls "$FILE" || die "'$FILE': No such file or directory"
+}
 
-[ "$(< $URLGATE_TMP)" ] && {
-    [ "$_SELECT_" -o "$_GREP_" -o "$_LIST_" ] || cat "$URLGATE_TMP"
-} || die "$_FILE_: No URLs found."
+#-------------------------#
+# FETCH PAGE FROM THE WEB #
+#-------------------------#
+fetch(){
+    local TMP="/tmp/curl.XXX"
+if (eval "$URLGATE_CURL $CURL 2>&1 > $TMP 2> /dev/null"); then
+    urls "$TMP"
+else
+    die "Cannot Curl the Link. Please check [Connection/Link]"
+fi
+    rm "$TMP"
 }
 
 #--------------------#
-# CURL FILE FROM URL #
+# SEARCH FOR PATTERN #
 #--------------------#
-_curl_(){
-local CURL_PAGE
+pattern(){
+    local line
+    local _PATTERN_
+while read -r line ;do
+    [[ "$line" =~ $PATTERN ]] && _PATTERN_+=( "$line" )
+done <<< "${URLS[@]}"
 
-read -r CURL_PAGE < <(${URLGATE_CURL_CMD} "$_CURL_" 2> /dev/null)
-
-(printf "%b\n" "$CURL_PAGE" | grep -Po "$URLGATE_REGEX" 2> /dev/null) > "$URLGATE_TMP"
-
-[ "$(< $URLGATE_TMP)" ] && {
-    [ "$_SELECT_" -o "$_GREP_" -o "$_LIST_" -o "$_EXEC_" ] || cat "$URLGATE_TMP"
-} || die "$_CURL_: No URLs found."
+URLS=( ${_PATTERN_[@]} )
 }
 
 #---------------#
 # LIST ALL URLS #
 #---------------#
-_list_(){
-local line
-local count=0
-while read -r line ; do
-    ((count++))
-    printf "(%3d) - %s\n" "$count" "$line"
-done < $URLGATE_TMP
-}
+list(){ printf " [*] %s\n" "${URLS[@]}" ;}
 
-#---------------------#
-# GREP NAME FROM LIST #
-#---------------------#
-_grep_(){
-local GREP_RESULT
-
-GREP_RESULT=$(${URLGATE_GREP_CMD} "$_GREP_" "$URLGATE_TMP")
-
-[ "$GREP_RESULT" ] && {
-    printf "%b\n" "$GREP_RESULT" > "$URLGATE_TMP"
-    [ "$_SELECT_" -o "$_LIST_" -o "$_EXEC_" ] || cat "$URLGATE_TMP"
-} || die "$_GREP_: No URLs found."
+#-----------------------#
+# SLECT IN THE URL LIST #
+#-----------------------#
+Select(){
+    local SELECT
+    read -ra SELECT < <(printf "%s\n" "${URLS[@]}" | eval "$URLGATE_SELECT")
+    URLS=( ${SELECT[@]} )
 }
 
 #----------------------#
-# SHOW SELECTION MENU  #
+# EXEC THE GIVIN LINK  #
 #----------------------#
-_select_(){
-local SELECTED_ITEM
-
-read -r SELECTED_ITEM < <(cat "$URLGATE_TMP" | ${URLGATE_DMENU_CMD})
-
-[ "$SELECTED_ITEM" ] && {
-    [ "$_EXEC_" ] && printf "%s\n" "$SELECTED_ITEM" > "$URLGATE_TMP" || printf "%s\n" "$SELECTED_ITEM"
-} || die "Select : No URLs found."
-}
-
-#---------------------#
-# EXEC COMMAND ON URL #
-#---------------------#
-_exec_(){
-local URL=$(cat "$URLGATE_TMP")
-local EXEC_CMD=$(printf "%s\n" "$URLGATE_EXEC_CMD" | sed "s;\%u;$URL;" 2> /dev/null)
-[ "$_SELECT_" ] && eval "$EXEC_CMD" || die "EXEC: -s option not selected"
+Exec(){
+    URLGATE_EXEC=${COMMAND}
+    for i in ${URLS[@]} ; {
+        URLGATE_EXEC=${URLGATE_EXEC//%u/$i}
+        eval "$URLGATE_EXEC"
+    }
 }
 
 #-------------#
 # HELP DIALOG #
 #-------------#
-_help_(){
+help(){
 while read ; do
     printf "%s\n" "$REPLY"
-done <<- HELP
-${_name_^^} Extract URLs from a text file
-Usage: ${_name_} [OPTIONS] ... [FILE] ...
-    Or: [CMD] | ${_name_} [OPTIONS]
+done <<-HELP
+${name^^} Extract URLs from a text file
+Usage: ${name} [OPTIONS] ... [FILE] ...
+   Or: [CMD] | ${name} [OPTIONS]
 
 OPTIONS
-    -f <file> : Extract URLs from file
-    -c <url>  : Extract URLs from the web
-    -l        : List All Extracted URLs
-    -g <text> : Use only URLs that match TEXT
-    -s        : Dmenu Selection menu
-    -e <file> : Exec command or script to use [%u = URL]
-    -r <regx> : REGEX regular expressions to use
-    -h        : Display this help text and exit
+    -f <FILE>    : Extract URLs from file
+    -c <URL>     : Extract URLs from the web
+    -p <PATTERN> : Use only URLs that match PATTERN
+    -e           : Exec command after select URL
+    -E <COMMAND> : The command or script to use with 'e' option. [%u = URL]
+    -l           : List All Extracted URLs
+    -s           : Use Select application
+    -h           : Display this help text and exit
 
 VARIABLES
-    URLGATE_GREP_CMD   Command to grep with.           Default [grep]
-    URLGATE_DMENU_CMD  Dmenu command to use.           Default [dmenu -p Urlgate -l 10 -i]
-    URLGATE_CURL_CMD   Command to curl Web page.       Default [curl -s]
-    URLGATE_EXEC_CMD   Exec command or script to use.  Default [xdg-open %u] "(%u) Replaced by the link"
-    URLGATE_REGEX      REGEX regular expressions to use
+    URLGATE_SELECT
+        SELECT command to use. Default [dmenu -p "Select Url:" -l 5]
+
+    URLGATE_CURL
+        Command to curl Web page. Default [curl -s]
+
+    URLGATE_EXEC
+        The command or script to use with 'e' option. Default [xdg-open %u]
+        %u : Selected url (accept multiple select)
+
+    URLGATE_REGEX
+        REGEX regular expressions to use
 
 NOTE
-    Export ${_name_^^} Variables before you use them 
+    Export ${name^^} Variables before you use them
+
 HELP
-exit 0
 }
 
 #---------------#
 # MAIN FUNCTION #
 #---------------#
-_main_(){
-while getopts ":f:c:lg:se:r:h" OPT ; do
+main(){
+while getopts ":f:c:p:seE:lh" OPT ; do
     case "$OPT" in
         f )
-            _FILE_="$OPTARG"
-            ((TASK++))
-            ((EMPTY++))
+            FILE="$OPTARG"
             ;;
         c )
-            _CURL_="$OPTARG"
-            ((TASK++))
-            ((EMPTY++))
+            CURL="$OPTARG"
+            ;;
+        p )
+            PATTERN="$OPTARG"
             ;;
         l )
-            _LIST_=true
-            ((SHOW++))
-            ;;
-        g )
-            _GREP_="$OPTARG"
+            LIST=true
             ;;
         s )
-            _SELECT_=true
-            ((SHOW++))
+            SELECT=true
             ;;
         e )
-            _EXEC_=true
-            URLGATE_EXEC="$OPTARG"
+            EXEC=true
             ;;
-        r )
-            URLGATE_REGEX="$OPTARG"
+        E )
+            COMMAND="$OPTARG"
             ;;
         h )
-            _HELP_=true
-            ((EMPTY++))
+            HELP=true
             ;;
         : )
-            die "option requires an argument -- '${OPTARG}'\nTry '${_name_} -h' for more information."
+            die "option requires an argument -- '$OPTARG' \nTry '$name -h' for more informations."
             ;;
         * )
-            die "invalid option -- '${OPTARG}'\nTry '${_name_} -h' for more information."
+            die "invalide option -- '$OPTARG' \nTry '$name -h' for more informations ."
             ;;
     esac
 done
@@ -177,30 +161,38 @@ done
 #-------------------#
 # RUN MAIN FUNCTION #
 #-------------------#
-# get pipe text
-[ -p /dev/stdin ] && { _FILE_="/dev/stdin" && ((TASKS++)) && ((EMPTY++)) ;}
-_main_ "$@"
+[ -p /dev/stdin ] && PIPE="/dev/stdin"
+main "$@"
 
-#------------------#
-# SCRIPT VARIABLES #
-#------------------#
-URLGATE_TMP="/tmp/${_name_}.XXX"
-[ "$URLGATE_GREP_CMD" ]  || URLGATE_GREP_CMD="grep"
-[ "$URLGATE_DMENU_CMD" ] || URLGATE_DMENU_CMD="dmenu -p Urlgate -l 10 -i"
-[ "$URLGATE_CURL_CMD" ]  || URLGATE_CURL_FLG="curl -s"
-[ "$URLGATE_EXEC_CMD" ]  || URLGATE_EXEC="xdg-open %u"
-[ "$URLGATE_REGEX" ]     || URLGATE_REGEX="(((http|https|ftp|gopher)|mailto):(\/\/)?[^ <>\"\t]|(www|ftp)[0-9]?\\.[-a-z0-9.]+)[^ .,;\t\n\r<\">\\):]?[^, <>\"\t]*[^ .,;\t\n\r<\">\\):]"
+#------------------------#
+# CHECK SCRIPT VARIABLES #
+#------------------------#
+[ "$URLGATE_CURL" ]   || URLGATE_CURL="curl -s"
+[ "$URLGATE_SELECT" ] || URLGATE_SELECT="dmenu -p 'Select Url :' -l 5"
+[ "$URLGATE_EXEC" ]   || URLGATE_EXEC="xdg-open %u"
+[ "$URLGATE_REGEX" ]  || URLGATE_REGEX="(((http|https|ftp|gopher)|mailto):(\/\/)?[^ <>\"\t]|(www|ftp)[0-9]?\\.[-a-z0-9.]+)[^ .,;\t\n\r<\">\\):]?[^, <>\"\t]*[^ .,;\t\n\r<\">\\):]"
 
 #----------------------#
-# RUN SELECTED OPTIONS #
+# CHECK FOR USER ERROR #
 #----------------------#
-(( TASK > 1 ))  && die "no multi tasks request allowed (-f,-c or pipeline)\nTry '${_name_} -h' for more information."
-(( SHOW > 1 ))  && die "no multi list request allowed (-l or -s)\nTry '${_name_} -h' for more information."
-(( EMPTY > 0 )) || die "missing file operand\nTry '${_name_} -h' for more information"
-[ "$_HELP_" ]   && _help_   || true
-[ "$_FILE_" ]   && _urls_   || true
-[ "$_CURL_" ]   && _curl_   || true
-[ "$_GREP_" ]   && _grep_   || true
-[ "$_LIST_" ]   && _list_   || true
-[ "$_SELECT_" ] && _select_ || true
-[ "$_EXEC_" ]   && _exec_   || true
+# check if user input file and curl or pipe
+[ "$((${#FILE[@]}+${#CURL[@]}+${#PIPE[@]}))" -ge 2 ] && die "no Multi tasks allowed (-f, -c, Pipe). \nTry '$name -h' for more informations."
+# check if user list and exec
+[ "$((${#LIST[@]}+${#EXEC[@]}))" -eq 2 ] && die "no Multi tasks allowed (-l, -e). \nTry '$name -h' for more informations."
+
+#---------------------#
+# EXECUTE USE OPTIONS #
+#---------------------#
+[ "$HELP" ]     && help
+[ "$FILE" ]     && file
+[ "$CURL" ]     && fetch
+[ "$PIPE" ]     && urls "$PIPE"
+[ "$PATTERN" ]  && pattern
+[ "$SELECT" ]   && Select
+[ "$LIST" ]     && list
+[ "$EXEC" ]     && Exec
+
+#------------------------#
+# JUST PRINT THE RESOULT #
+#------------------------#
+[ "$LIST" ] || [ "$EXEC" ] || printf "%s\n" "${URLS[@]}"

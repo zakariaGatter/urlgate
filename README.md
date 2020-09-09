@@ -13,7 +13,7 @@
 
 [Urlgate] allows you to...
 
-* Get lis of URLS
+* Get list of URLS
 * Read from pipeline
 * Grep to special URLS
 * Curl text file from the web
