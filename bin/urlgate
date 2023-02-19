@@ -3,12 +3,16 @@
 #-------------#
 # SCRIPT NAME #
 #-------------#
-name=${0##*/}
+declare -r name=${0##*/}
+declare -r Version="0.1.0"
 
 #-----------#
 # ERROR MSG #
 #-----------#
-die(){ printf "%s: %b\n" "${name^}" "$@" >&2 ; exit 2 ;}
+die(){
+    printf "%s: %b\n" "${name^}" "$@" >&2
+    exit 2
+}
 
 #--------------#
 # GET ALL URLS #
@@ -30,13 +34,15 @@ file(){
 # FETCH PAGE FROM THE WEB #
 #-------------------------#
 fetch(){
-    local TMP="/tmp/curl.XXX"
+local TMP="/tmp/curl.XXX"
+
 if (eval "$URLGATE_CURL $CURL 2>&1 > $TMP 2> /dev/null"); then
     urls "$TMP"
 else
     die "Cannot Curl the Link. Please check [Connection/Link]"
 fi
-    rm "$TMP"
+
+rm "$TMP"
 }
 
 #--------------------#
@@ -44,18 +50,17 @@ fi
 #--------------------#
 pattern(){
     local line
-    local _PATTERN_
 while read -r line ;do
-    [[ "$line" =~ $PATTERN ]] && _PATTERN_+=( "$line" )
+    [[ $line =~ $PATTERN ]] && URLS+=( "$line" )
 done <<< "${URLS[@]}"
-
-URLS=( ${_PATTERN_[@]} )
 }
 
 #---------------#
 # LIST ALL URLS #
 #---------------#
-list(){ printf " [*] %s\n" "${URLS[@]}" ;}
+list(){
+    printf " [*] %s\n" "${URLS[@]}"
+}
 
 #-----------------------#
 # SLECT IN THE URL LIST #
@@ -71,10 +76,10 @@ Select(){
 #----------------------#
 Exec(){
     URLGATE_EXEC=${COMMAND}
-    for i in ${URLS[@]} ; {
+    for i in ${URLS[@]} ; do
         URLGATE_EXEC=${URLGATE_EXEC//%u/$i}
         eval "$URLGATE_EXEC"
-    }
+    done
 }
 
 #-------------#
@@ -124,36 +129,16 @@ HELP
 main(){
 while getopts ":f:c:p:seE:lh" OPT ; do
     case "$OPT" in
-        f )
-            FILE="$OPTARG"
-            ;;
-        c )
-            CURL="$OPTARG"
-            ;;
-        p )
-            PATTERN="$OPTARG"
-            ;;
-        l )
-            LIST=true
-            ;;
-        s )
-            SELECT=true
-            ;;
-        e )
-            EXEC=true
-            ;;
-        E )
-            COMMAND="$OPTARG"
-            ;;
-        h )
-            HELP=true
-            ;;
-        : )
-            die "option requires an argument -- '$OPTARG' \nTry '$name -h' for more informations."
-            ;;
-        * )
-            die "invalide option -- '$OPTARG' \nTry '$name -h' for more informations ."
-            ;;
+        f ) FILE="$OPTARG"    ;;
+        c ) CURL="$OPTARG"    ;;
+        p ) PATTERN="$OPTARG" ;;
+        l ) LIST=true         ;;
+        s ) SELECT=true       ;;
+        e ) EXEC=true         ;;
+        E ) COMMAND="$OPTARG" ;;
+        h ) HELP=true         ;;
+        : ) die "option requires an argument -- '$OPTARG' \nTry '$name -h' for more informations." ;;
+        * ) die "invalide option -- '$OPTARG' \nTry '$name -h' for more informations ." ;;
     esac
 done
 }
